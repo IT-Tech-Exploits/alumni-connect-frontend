@@ -20,6 +20,7 @@ import {
   ArrowRight,
   BarChart3,
   Briefcase,
+  FileSpreadsheet
   CalendarDays,
   CheckCircle2,
   ClipboardList,
@@ -395,6 +396,7 @@ const AdminDashboard = () => {
               { label: "Academic Structure", desc: "Departments & programmes", path: "/admin/academic", icon: Radar },
               { label: "Moderate Jobs", desc: "Approve or reject postings", path: "/admin/jobs", icon: Briefcase },
               { label: "Manage Events", desc: "Create and delete events", path: "/admin/events", icon: CalendarDays },
+              { label: "Alumni Roster", desc: "View and export alumni data", path: "/admin/alumni-roster", icon: FileSpreadsheet },
             ].map((q) => {
               const Icon = q.icon;
               return (

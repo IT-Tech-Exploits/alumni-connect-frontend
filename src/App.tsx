@@ -30,6 +30,7 @@ import AlumniStudentsPage from "./pages/alumni/AlumniStudentsPage";
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ManageUsers from "./pages/admin/ManageUsers";
+import AdminAlumniRosterPage from "./pages/admin/AdminAlumniRosterPage";
 import ManageJobs from "./pages/admin/ManageJobs";
 import ManageEvents from "./pages/admin/ManageEvents";
 import ManageDepartments from "./pages/admin/ManageDepartments";
@@ -314,6 +315,14 @@ const AppRoutes = () => (
         </AdminRoute>
       }
     />
+      <Route
+        path="/admin/alumni-roster"
+        element={
+        <AdminRoute>
+            <AdminAlumniRosterPage />
+        </AdminRoute>
+      }
+/>
     <Route
       path="/profile"
       element={

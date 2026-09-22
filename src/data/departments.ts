@@ -24,9 +24,8 @@ export interface StudyMode {
 }
 
 export const STUDY_MODES: StudyMode[] = [
-  { code: "NE", name: "National Entry" },
-  { code: "PE", name: "Parallel Entry" },
-  { code: "DE", name: "Distance Learning" },
+  { code: "NE", name: "Normal Entry" },
+  { code: "ME", name: "Mature Entry" },
 ];
 
 export interface Programme {
