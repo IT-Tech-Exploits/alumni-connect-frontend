@@ -9,7 +9,7 @@ import {
   isInGroupApi,
   toggleJoinGroupApi,
 } from "../api/groupsApi";
-import type { Group } from "../data/mockGroups";
+import type { Group } from "../types";
 import { Spinner } from "../components/shared";
 import { timeAgo } from "../lib/timeAgo";
 

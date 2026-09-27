@@ -1,6 +1,6 @@
 /**
  * Profile-domain types for the LinkedIn-inspired profile experience.
- * Frontend only — mock data + local state, API-ready for later wiring.
+ * All profile data is served by the backend API.
  */
 
 import type { User } from "./user";

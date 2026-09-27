@@ -19,10 +19,10 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getDepartmentsApi, type Department } from "../../api/userApi";
-import { getProgrammesForDepartment, parseStudentId, CAMPUSES } from "../../data";
+import { sendVerificationCodeApi } from "../../api/authApi";
+import { getProgrammesForDepartment, parseStudentId, CAMPUSES } from "../../data/departments";
 import { Select } from "../shared/Select";
 import { OtpInput } from "./OtpInput";
-import { DEMO_CODE } from "../../lib/demoCode";
 import { alumniGraduationYears, expectedGraduationYears } from "../../lib/gradYears";
 
 type Role = "student" | "alumni";
@@ -143,6 +143,13 @@ export default function MultiStepRegistration() {
     }
     setError("");
     setStep((s) => (s + 1) as Step);
+    if (step === 3) {
+      sendVerificationCodeApi(form.email).catch(() => {
+        setError(
+          "We couldn't email a verification code. Check the address and try again.",
+        );
+      });
+    }
   };
 
   const goBack = () => {
@@ -157,8 +164,8 @@ export default function MultiStepRegistration() {
   const handleFinish = async () => {
     setError("");
     if (step !== 4) return;
-    if (verificationCode !== DEMO_CODE) {
-      setError("That code doesn't match the one we sent. Please try again.");
+    if (verificationCode.length < 6) {
+      setError("Enter the 6-digit code we emailed you.");
       return;
     }
     setFinalizing(true);
@@ -172,6 +179,7 @@ export default function MultiStepRegistration() {
         password: form.password,
         graduationYear: form.graduationYear || undefined as unknown as string,
         campus: form.campus,
+        code: verificationCode,
       };
       if (form.role === "student") {
         payload.registrationNumber = form.registrationNumber;
@@ -186,8 +194,6 @@ export default function MultiStepRegistration() {
       setFinalizing(false);
     }
   };
-
-  const demoCode = DEMO_CODE;
 
   return (
     <div className="space-y-5">
@@ -452,7 +458,7 @@ export default function MultiStepRegistration() {
           </div>
           <div className="flex items-start gap-2 rounded-lg bg-brand-primary/5 px-3 py-2.5 text-xs text-brand-primary">
             <Presentation className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>We never store plain-text passwords. This demo runs entirely in your browser.</span>
+            <span>We never store plain-text passwords — they are hashed on the server.</span>
           </div>
         </div>
       )}
@@ -480,8 +486,8 @@ export default function MultiStepRegistration() {
             onChange={setVerificationCode}
           />
 
-          <div className="rounded-md bg-amber-50 px-3 py-2 text-center text-xs text-amber-800">
-            Demo: enter code <span className="font-mono font-semibold">{demoCode}</span>
+          <div className="rounded-md bg-brand-primary/5 px-3 py-2 text-center text-xs text-muted-foreground">
+            The code expires shortly — request a new one if it stops working.
           </div>
 
           <div className="flex items-start gap-2 rounded-lg bg-brand-primary/5 px-3 py-2.5 text-xs text-brand-primary">

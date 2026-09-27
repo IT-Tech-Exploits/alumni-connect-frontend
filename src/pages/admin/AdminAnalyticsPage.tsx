@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -37,19 +37,92 @@ import {
   SectionHeader,
 } from "../../components/shared";
 import {
-  getAnalyticsDataset,
-  ANALYTICS_FILTER_OPTIONS,
-  type AnalyticsFilters,
-} from "../../data/mockAnalytics";
+  getAnalyticsDatasetApi,
+  getAnalyticsFilterOptionsApi,
+} from "../../api/analyticsApi";
+import type {
+  AnalyticsDataset,
+  AnalyticsFilterOptions,
+  AnalyticsFilters,
+} from "../../types/analytics";
 import { DEPARTMENTS } from "../../data/departments";
+import { Spinner } from "../../components/shared";
 
 const COLORS = ["#27155f", "#e40d0a", "#3a2080", "#10b981", "#f59e0b", "#6366f1", "#0ea5e9", "#d946ef"];
+
+const EMPTY_DATASET: AnalyticsDataset = {
+  studentsVsAlumni: [],
+  newRegistrations: [],
+  activeUsers: [],
+  alumniByDepartment: [],
+  usersByProgramme: [],
+  graduationDistribution: [],
+  campusDistribution: [],
+  engagement: {
+    posts: 0,
+    likes: 0,
+    comments: 0,
+    connections: 0,
+    eventParticipants: 0,
+    mentorship: 0,
+  },
+  engagementTrend: [],
+  career: {
+    jobsPosted: 0,
+    applications: 0,
+    savedJobs: 0,
+    pendingJobs: 0,
+    hires: 0,
+  },
+  applicationsByJob: [],
+};
 
 const AdminAnalyticsPage = () => {
   const [filters, setFilters] = useState<AnalyticsFilters>({});
   const [applied, setApplied] = useState<AnalyticsFilters>({});
+  const [dataset, setDataset] = useState<AnalyticsDataset>(EMPTY_DATASET);
+  const [options, setOptions] = useState<AnalyticsFilterOptions | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const dataset = useMemo(() => getAnalyticsDataset(applied), [applied]);
+  useEffect(() => {
+    getAnalyticsFilterOptionsApi()
+      .then(setOptions)
+      .catch(() => setOptions(null));
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    getAnalyticsDatasetApi(applied)
+      .then((data) => {
+        if (active) setDataset(data);
+      })
+      .catch((e: unknown) => {
+        if (active)
+          setError(
+            e instanceof Error ? e.message : "Failed to load analytics",
+          );
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [applied]);
+
+  const applyFilters = () => {
+    setLoading(true);
+    setError("");
+    setApplied(filters);
+  };
+
+  const resetFilters = () => {
+    setLoading(true);
+    setError("");
+    setFilters({});
+    setApplied({});
+  };
 
   const studentsTotal =
     dataset.studentsVsAlumni.find((d) => d.name === "Students")?.value ?? 0;
@@ -67,15 +140,15 @@ const AdminAnalyticsPage = () => {
     dataset.engagement.eventParticipants;
 
   const deptOptions = DEPARTMENTS.map((d) => ({ value: d.name, label: d.name }));
-  const yearOptions = ANALYTICS_FILTER_OPTIONS.graduationYears.map((y) => ({
+  const yearOptions = (options?.graduationYears ?? []).map((y) => ({
     value: String(y),
     label: String(y),
   }));
-  const campusOptions = ANALYTICS_FILTER_OPTIONS.campuses.map((c) => ({
+  const campusOptions = (options?.campuses ?? []).map((c) => ({
     value: c,
     label: c,
   }));
-  const entryTypeOptions = ANALYTICS_FILTER_OPTIONS.entryTypes.map((t) => ({
+  const entryTypeOptions = (options?.entryTypes ?? []).map((t) => ({
     value: t,
     label: t,
   }));
@@ -115,16 +188,22 @@ const AdminAnalyticsPage = () => {
             icon={Layers}
             title="Filter analytics"
             action={
-              <button
-                type="button"
-                onClick={() => {
-                  setFilters({});
-                  setApplied({});
-                }}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-primary hover:underline"
-              >
-                <RotateCcw className="h-3.5 w-3.5" /> Reset
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={applyFilters}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-brand-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-brand-primaryLight"
+                >
+                  Apply filters
+                </button>
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-primary hover:underline"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" /> Reset
+                </button>
+              </div>
             }
           />
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -197,7 +276,21 @@ const AdminAnalyticsPage = () => {
           </div>
         </section>
 
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {loading && (
+          <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+            <Spinner className="h-4 w-4" /> Loading analytics…
+          </div>
+        )}
+
         {/* Top stats */}
+        {!loading && !error && (
+          <>
         <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <StatCard
             label="Total Students"
@@ -437,6 +530,8 @@ const AdminAnalyticsPage = () => {
             </div>
           </div>
         </section>
+          </>
+        )}
       </div>
     </PageContainer>
   );

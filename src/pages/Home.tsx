@@ -12,7 +12,7 @@ const features = [
       </svg>
     ),
     title: "Alumni Network",
-    desc: "Connect with thousands of graduates working across industries worldwide.",
+    desc: "Connect with graduates working across industries worldwide.",
   },
   {
     icon: (
@@ -407,42 +407,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-24 px-6 bg-white">
-        <div className="max-w-6xl mx-auto">
-          <AnimatedSection className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              What Our <span className="text-[#d2621a]">Community</span> Says
-            </h2>
-          </AnimatedSection>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { name: "Sarah Johnson", role: "Computer Science Student", text: "Alumni Connect helped me find my dream internship through an alumni mentor. The platform is incredible!" },
-              { name: "David Mwale", role: "Alumni, Software Engineer", text: "Being able to give back to my university community while growing my network has been an amazing experience." },
-              { name: "Grace Banda", role: "Business Graduate", text: "The mentorship program connected me with industry leaders who shaped my career path." },
-            ].map((t, i) => (
-              <AnimatedSection key={t.name} delay={i * 0.15}>
-                <div className="bg-gray-50 rounded-2xl p-8 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 h-full flex flex-col">
-                  <div className="flex gap-1 mb-4">
-                    {[...Array(5)].map((_, idx) => (
-                      <svg key={idx} className="w-5 h-5 text-[#d2621a]" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    ))}
-                  </div>
-                  <p className="text-gray-600 mb-6 flex-1 italic">"{t.text}"</p>
-                  <div>
-                    <p className="font-bold text-gray-900">{t.name}</p>
-                    <p className="text-sm text-gray-500">{t.role}</p>
-                  </div>
-                </div>
-              </AnimatedSection>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className="relative py-24 px-6 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-[#1e3a6e] to-[#3a2080]" />
@@ -453,7 +417,7 @@ const Home = () => {
             Ready to Build Your Future?
           </h2>
           <p className="text-blue-100 text-lg mb-10 max-w-2xl mx-auto">
-            Join thousands of students and alumni already on the platform. Your next opportunity is just a click away.
+            Join students and alumni already building their next opportunity. Yours is just a click away.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link

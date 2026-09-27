@@ -1,19 +1,6 @@
 import type { User } from "../types";
 import type { ProfileAchievement, ProfileExperience } from "../types/profile";
 import { api, getErrorMessage } from "./client";
-import { MOCK_MODE, mockDelay, mockDelayFast, mockIdentifiableUser } from "./mockMode";
-import {
-  DEPARTMENTS,
-  MOCK_ALUMNI,
-  MOCK_EVENTS,
-  MOCK_JOBS,
-  MOCK_PENDING_ALUMNI,
-  MOCK_PROFILES,
-  MOCK_STUDENTS,
-  MOCK_USERS,
-  MOCK_DASHBOARD_STATS,
-  getDepartmentStatsDataset,
-} from "../data";
 
 export type PeerUserSnippet = {
   _id: string;
@@ -73,74 +60,8 @@ export interface DashboardStats {
   };
 }
 
-function mockPeer(id: string): PeerUserSnippet {
-  const all = [...MOCK_ALUMNI, ...MOCK_STUDENTS];
-  const found = all.find((u) => u._id === id);
-  return found
-    ? { _id: found._id, name: found.name, profilePhoto: found.profilePhoto, role: found.role }
-    : { _id: id, name: "Alumni Member", role: "alumni" };
-}
-
-function resolveCurrentUser(): User {
-  const { _id } = mockIdentifiableUser();
-  const found =
-    MOCK_USERS.find((u) => u._id === _id) ?? MOCK_USERS.find((u) => u.role === "alumni");
-  return MOCK_PROFILE_OVERRIDES.get(_id) ?? found ?? MOCK_USERS[0];
-}
-
-const MOCK_PROFILE_OVERRIDES = new Map<string, User>();
-function setProfileOverride(u: User) {
-  MOCK_PROFILE_OVERRIDES.set(u._id, u);
-  return u;
-}
-
-function mockProfileStats(id: string) {
-  const appliedJobs = MOCK_JOBS.filter((j) => j.applicants?.includes(id)).map(
-    (j) => ({
-      _id: j._id,
-      title: j.title,
-      company: j.company,
-      location: j.location,
-      type: j.type ?? "full-time",
-      status: j.status,
-      createdAt: j.createdAt,
-    }),
-  );
-  const joinedEvents = MOCK_EVENTS.filter((e) => e.participants?.includes(id)).map(
-    (e) => ({
-      _id: e._id,
-      title: e.title,
-      description: e.description,
-      eventDate: e.eventDate,
-      location: e.location ?? "",
-      organizer: e.organizer.name,
-    }),
-  );
-  return {
-    jobsApplied: appliedJobs.length,
-    appliedJobs,
-    connectionsCount: 5,
-    connectionsList: MOCK_ALUMNI.slice(0, 5).map((a) => ({
-      _id: a._id,
-      name: a.name,
-      email: a.email,
-      photo: a.profilePhoto ?? "",
-      company: a.company,
-      position: a.position,
-      graduationYear: a.graduationYear,
-      university: "Exploits University",
-    })),
-    eventsJoined: joinedEvents.length,
-    eventsList: joinedEvents,
-  };
-}
-
 // ========== EXISTING FUNCTIONS ==========
 export async function getPeerUserApi(id: string): Promise<PeerUserSnippet> {
-  if (MOCK_MODE) {
-    await mockDelayFast();
-    return mockPeer(id);
-  }
   try {
     const { data } = await api.get<PeerUserSnippet>(`/users/peer/${id}`);
     return data;
@@ -150,10 +71,6 @@ export async function getPeerUserApi(id: string): Promise<PeerUserSnippet> {
 }
 
 export async function getAllUsersApi(): Promise<User[]> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    return MOCK_USERS;
-  }
   try {
     const { data } = await api.get<
       { success: boolean; users: User[] } | User[]
@@ -164,18 +81,8 @@ export async function getAllUsersApi(): Promise<User[]> {
   }
 }
 
+/** Omit `userId` for your own profile. */
 export async function getProfileApi(userId?: string): Promise<User> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    if (userId && userId !== mockIdentifiableUser()._id) {
-      return (
-        MOCK_USERS.find((u) => u._id === userId) ??
-        MOCK_PROFILES[userId] ??
-        MOCK_USERS[0]
-      );
-    }
-    return resolveCurrentUser();
-  }
   try {
     const { data } = await api.get<User>(userId ? `/users/${userId}` : "/profile");
     return data;
@@ -209,25 +116,8 @@ export async function updateProfileApi(data: {
   experiences?: ProfileExperience[];
   achievements?: ProfileAchievement[];
 }): Promise<User> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    const current = resolveCurrentUser();
-    const merged: User = {
-      ...current,
-      ...data,
-      skills: data.skills ?? current.skills,
-      interests: data.interests ?? current.interests,
-      name: data.name ?? current.name,
-    };
-    return setProfileOverride(merged);
-  }
   try {
-    const payload = {
-      ...data,
-      skills: Array.isArray(data.skills) ? data.skills : [],
-      interests: Array.isArray(data.interests) ? data.interests : [],
-    };
-    const { data: user } = await api.put<User>("/profile/update", payload);
+    const { data: user } = await api.put<User>("/profile/update", { ...data });
     return user;
   } catch (e) {
     throw new Error(getErrorMessage(e, "Failed to update profile"));
@@ -235,10 +125,6 @@ export async function updateProfileApi(data: {
 }
 
 export async function deleteUserApi(id: string): Promise<void> {
-  if (MOCK_MODE) {
-    await mockDelayFast();
-    return;
-  }
   try {
     await api.delete(`/admin/users/${id}`);
   } catch (e) {
@@ -247,10 +133,6 @@ export async function deleteUserApi(id: string): Promise<void> {
 }
 
 export async function approveAlumniApi(id: string): Promise<void> {
-  if (MOCK_MODE) {
-    await mockDelayFast();
-    return;
-  }
   try {
     await api.put(`/admin/approve-alumni/${id}`);
   } catch (e) {
@@ -262,10 +144,6 @@ export async function changePasswordApi(payload: {
   currentPassword?: string;
   newPassword: string;
 }): Promise<User> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    return resolveCurrentUser();
-  }
   try {
     const { data } = await api.put<{ user: User }>(
       "/profile/password",
@@ -283,10 +161,6 @@ export async function inviteAdminApi(payload: {
   email: string;
   tempPassword: string;
 }): Promise<void> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    return;
-  }
   try {
     await api.post("/admin/invite-admin", payload);
   } catch (e) {
@@ -297,12 +171,6 @@ export async function inviteAdminApi(payload: {
 export async function uploadCvApi(
   file: File,
 ): Promise<{ cvUrl: string; user: User }> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    const cvUrl = URL.createObjectURL(file);
-    const user = await updateProfileApi({ cvUrl });
-    return { cvUrl, user };
-  }
   try {
     const formData = new FormData();
     formData.append("cv", file);
@@ -316,12 +184,6 @@ export async function uploadCvApi(
 export async function uploadPhotoApi(
   file: File,
 ): Promise<{ profilePhoto: string; user: User }> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    const profilePhoto = URL.createObjectURL(file);
-    const user = await updateProfileApi({ profilePhoto });
-    return { profilePhoto, user };
-  }
   try {
     const formData = new FormData();
     formData.append("photo", file);
@@ -336,14 +198,6 @@ export async function uploadPhotoApi(
 }
 
 export async function openCvInNewTab(): Promise<void> {
-  if (MOCK_MODE) {
-    const user = resolveCurrentUser();
-    if (user.cvUrl) {
-      const win = window.open(user.cvUrl, "_blank", "noopener,noreferrer");
-      if (!win) throw new Error("Popup blocked. Please allow popups for this site.");
-    }
-    return;
-  }
   try {
     const response = await api.get("/cv", {
       responseType: "blob",
@@ -393,11 +247,6 @@ export interface ProfileStats {
 }
 
 export async function getProfileStatsApi(): Promise<ProfileStats> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    const { _id } = mockIdentifiableUser();
-    return mockProfileStats(_id);
-  }
   try {
     const { data } = await api.get<ProfileStats>("/profile/stats");
     return data;
@@ -408,10 +257,6 @@ export async function getProfileStatsApi(): Promise<ProfileStats> {
 
 // ========== NEW ADMIN DASHBOARD FUNCTIONS ==========
 export async function getDashboardStatsApi(): Promise<DashboardStats> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    return MOCK_DASHBOARD_STATS;
-  }
   try {
     const { data } = await api.get<{ success: boolean; stats: DashboardStats }>(
       "/admin/dashboard/stats",
@@ -427,21 +272,6 @@ export async function getMentorshipAnalyticsApi(): Promise<{
   analytics: Array<{ _id: string; count: number; avgMatchScore: number }>;
   topMentors: Array<{ name: string; department: string; menteeCount: number }>;
 }> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    return {
-      analytics: DEPARTMENTS.map((d, i) => ({
-        _id: d.name,
-        count: 18 + i * 6,
-        avgMatchScore: 76 + i * 2,
-      })),
-      topMentors: MOCK_ALUMNI.slice(0, 5).map((a, i) => ({
-        name: a.name,
-        department: a.department ?? "Information Technology",
-        menteeCount: 4 - i,
-      })),
-    };
-  }
   try {
     const { data } = await api.get("/admin/dashboard/mentorship-analytics");
     return data;
@@ -452,10 +282,6 @@ export async function getMentorshipAnalyticsApi(): Promise<{
 
 // ========== DEPARTMENT APIS ==========
 export async function getDepartmentsApi(): Promise<Department[]> {
-  if (MOCK_MODE) {
-    await mockDelayFast();
-    return DEPARTMENTS;
-  }
   try {
     const { data } = await api.get<{
       success: boolean;
@@ -468,10 +294,6 @@ export async function getDepartmentsApi(): Promise<Department[]> {
 }
 
 export async function getAllDepartmentsApi(): Promise<Department[]> {
-  if (MOCK_MODE) {
-    await mockDelayFast();
-    return DEPARTMENTS;
-  }
   try {
     const { data } = await api.get<{
       success: boolean;
@@ -488,21 +310,6 @@ export async function createDepartmentApi(payload: {
   code: string;
   description?: string;
 }): Promise<Department> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    const now = new Date().toISOString();
-    const dept: Department = {
-      _id: `dep-${Date.now()}`,
-      name: payload.name,
-      code: payload.code,
-      description: payload.description ?? "",
-      isActive: true,
-      createdAt: now,
-      updatedAt: now,
-    };
-    DEPARTMENTS.push(dept);
-    return dept;
-  }
   try {
     const { data } = await api.post<{
       success: boolean;
@@ -524,17 +331,6 @@ export async function updateDepartmentApi(
     isActive?: boolean;
   },
 ): Promise<Department> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    const idx = DEPARTMENTS.findIndex((d) => d._id === id);
-    if (idx < 0) throw new Error("Department not found");
-    DEPARTMENTS[idx] = {
-      ...DEPARTMENTS[idx],
-      ...payload,
-      updatedAt: new Date().toISOString(),
-    };
-    return DEPARTMENTS[idx];
-  }
   try {
     const { data } = await api.put<{
       success: boolean;
@@ -547,12 +343,6 @@ export async function updateDepartmentApi(
 }
 
 export async function deleteDepartmentApi(id: string): Promise<void> {
-  if (MOCK_MODE) {
-    await mockDelayFast();
-    const idx = DEPARTMENTS.findIndex((d) => d._id === id);
-    if (idx >= 0) DEPARTMENTS.splice(idx, 1);
-    return;
-  }
   try {
     await api.delete(`/admin/departments/${id}`);
   } catch (e) {
@@ -561,16 +351,6 @@ export async function deleteDepartmentApi(id: string): Promise<void> {
 }
 
 export async function getDepartmentStatsApi(): Promise<DepartmentStats[]> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    const dataset = getDepartmentStatsDataset();
-    return dataset.map((d) => ({
-      department: d._id,
-      students: Math.round(d.count * 0.64),
-      alumni: Math.round(d.count * 0.36),
-      total: d.count,
-    }));
-  }
   try {
     const { data } = await api.get<{
       success: boolean;
@@ -589,29 +369,6 @@ export async function getAllUsersAdminApi(filters?: {
   isApproved?: boolean;
   search?: string;
 }): Promise<User[]> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    let results = [...MOCK_USERS];
-    if (filters?.role && filters.role !== "all") {
-      results = results.filter((u) => u.role === filters.role);
-    }
-    if (filters?.department && filters.department !== "all") {
-      results = results.filter((u) => u.department === filters.department);
-    }
-    if (filters?.isApproved !== undefined) {
-      results = results.filter((u) => Boolean(u.isApproved) === filters.isApproved);
-    }
-    if (filters?.search) {
-      const s = filters.search.toLowerCase();
-      results = results.filter(
-        (u) =>
-          u.name.toLowerCase().includes(s) ||
-          u.email.toLowerCase().includes(s) ||
-          (u.registrationNumber ?? "").toLowerCase().includes(s),
-      );
-    }
-    return results;
-  }
   try {
     const params = new URLSearchParams();
     if (filters?.role) params.append("role", filters.role);
@@ -629,10 +386,6 @@ export async function getAllUsersAdminApi(filters?: {
 }
 
 export async function getPendingAlumniApi(): Promise<User[]> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    return MOCK_PENDING_ALUMNI;
-  }
   try {
     const { data } = await api.get<{ success: boolean; alumni: User[] }>(
       "/admin/users/pending-alumni",

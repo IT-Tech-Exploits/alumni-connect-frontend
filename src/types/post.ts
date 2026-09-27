@@ -6,6 +6,16 @@ export type PostCategory =
   | "Event"
   | "Job";
 
+/** Every category a post can be filed under, in the order shown in the composer. */
+export const POST_CATEGORIES: PostCategory[] = [
+  "Achievement",
+  "Career Update",
+  "News",
+  "General",
+  "Event",
+  "Job",
+];
+
 export interface PostComment {
   _id: string;
   userId: string;

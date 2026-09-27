@@ -6,8 +6,6 @@ import {
   type ReactNode,
 } from "react";
 import { api, getErrorMessage } from "../api/client";
-import { MOCK_MODE } from "../api/mockMode";
-import { loginApi, registerApi } from "../api/authApi";
 
 export type UserRole = "student" | "alumni" | "admin";
 
@@ -76,13 +74,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    if (MOCK_MODE) {
-      // No backend to validate against — restore the session as-is.
-      setUser(parsed);
-      setLoading(false);
-      return;
-    }
-
     api
       .get("/profile", {
         headers: { Authorization: `Bearer ${parsed?.token}` },
@@ -110,12 +101,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const login = async (email: string, password: string) => {
-    if (MOCK_MODE) {
-      const auth = await loginApi(email, password);
-      const mustChangePassword = auth.mustChangePassword === true;
-      persist({ ...auth, mustChangePassword });
-      return { mustChangePassword, user: auth };
-    }
     try {
       const { data } = await api.post<{
         user: User;
@@ -135,11 +120,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const registerStudent = async (data: Record<string, string>) => {
-    if (MOCK_MODE) {
-      const auth = await registerApi({ ...data, role: "student" });
-      persist({ ...auth, mustChangePassword: false });
-      return;
-    }
     try {
       const { data: body } = await api.post<{
         user: User;
@@ -155,16 +135,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const registerFirstAdmin = async (data: Record<string, string>) => {
-    if (MOCK_MODE) {
-      const auth = await registerApi({
-        name: data.name,
-        email: data.email,
-        password: data.password,
-        role: "admin",
-      });
-      persist({ ...auth, mustChangePassword: false });
-      return;
-    }
     try {
       const { data: body } = await api.post<{
         user: User;
@@ -185,12 +155,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const registerAlumni = async (data: Record<string, string>) => {
-    if (MOCK_MODE) {
-      const auth = await registerApi({ ...data, role: "alumni" });
-      persist({ ...auth, mustChangePassword: false });
-      // Demo: alumni are approved instantly so they can explore the app.
-      return { pendingApproval: false };
-    }
     try {
       const { data: body } = await api.post<{
         user: User;

@@ -1,6 +1,10 @@
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { AtSign } from "lucide-react";
-import { MOCK_ALUMNI, MOCK_STUDENTS } from "../../data";
+import {
+  getAlumniDirectoryApi,
+  getStudentsDirectoryApi,
+} from "../../api/directoryApi";
+import type { DirectoryUser } from "../../types";
 import { InitialsAvatar } from "../shared";
 
 export interface MentionCandidate {
@@ -11,22 +15,13 @@ export interface MentionCandidate {
   graduationYear?: string;
 }
 
-const CANDIDATES: MentionCandidate[] = [
-  ...MOCK_ALUMNI.map((a) => ({
-    _id: a._id,
-    name: a.name,
-    role: "alumni",
-    program: a.department,
-    graduationYear: a.graduationYear,
-  })),
-  ...MOCK_STUDENTS.map((s) => ({
-    _id: s._id,
-    name: s.name,
-    role: "student",
-    program: s.department,
-    graduationYear: s.graduationYear,
-  })),
-];
+const toCandidate = (u: DirectoryUser): MentionCandidate => ({
+  _id: u._id,
+  name: u.name,
+  role: u.role,
+  program: u.program,
+  graduationYear: u.graduationYear,
+});
 
 interface TagUserInputProps {
   value: string;
@@ -49,14 +44,32 @@ export function TagUserInput({
 }: TagUserInputProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [candidates, setCandidates] = useState<MentionCandidate[]>([]);
   const boxRef = useRef<HTMLTextAreaElement>(null);
+  const loadedRef = useRef(false);
+
+  /** Member list comes from the directory endpoints, fetched on first "@". */
+  const loadCandidates = useCallback(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    Promise.all([getAlumniDirectoryApi(), getStudentsDirectoryApi()])
+      .then(([alumni, students]) => {
+        setCandidates([
+          ...alumni.alumni.map(toCandidate),
+          ...students.students.map(toCandidate),
+        ]);
+      })
+      .catch(() => {
+        loadedRef.current = false;
+      });
+  }, []);
 
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return CANDIDATES.filter(
+    return candidates.filter(
       (c) => !q || c.name.toLowerCase().includes(q),
     ).slice(0, 6);
-  }, [query]);
+  }, [query, candidates]);
 
   const handleChange = (next: string) => {
     onChange(next);
@@ -65,6 +78,7 @@ export function TagUserInput({
     if (at !== -1) {
       const token = next.slice(at + 1);
       if (token.length <= 40 && !/\n/.test(token) && /^[\p{L}\p{N}_ ]*$/u.test(token)) {
+        loadCandidates();
         setOpen(true);
         setQuery(token.trim());
         return;

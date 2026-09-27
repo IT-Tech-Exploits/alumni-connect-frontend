@@ -1,12 +1,27 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { VerifyCodeCard } from "../components/auth/VerifyCodeCard";
-import { DEMO_CODE } from "../lib/demoCode";
+import {
+  resendVerificationCodeApi,
+  verifyEmailApi,
+} from "../api/authApi";
 import LogoHeader from "../components/layout/LogoHeader";
 import Background from "../components/layout/Background";
 
 const VerifyEmailPage = () => {
+  const [params] = useSearchParams();
+  const [fallbackEmail] = useState(
+    () => localStorage.getItem("alumniConnectPendingEmail") ?? "",
+  );
+  const email = params.get("email") ?? fallbackEmail;
+
   const handleVerify = async (code: string) => {
-    return code === DEMO_CODE;
+    if (!email) {
+      throw new Error("We don't know which address to verify. Start again from the sign-in page.");
+    }
+    await verifyEmailApi(email, code);
+    localStorage.removeItem("alumniConnectPendingEmail");
+    return true;
   };
 
   return (
@@ -18,8 +33,9 @@ const VerifyEmailPage = () => {
             <VerifyCodeCard
               title="Verify your email"
               subtitle="Confirm your email address to activate your Alumni Connect account."
-              destination="you@example.com"
+              destination={email || "your email address"}
               onVerify={handleVerify}
+              onResend={email ? () => resendVerificationCodeApi(email) : undefined}
               successTitle="Email verified successfully!"
               successDescription="Your account is active. You can now sign in and start connecting with the Exploits University community."
               successAction={
@@ -38,7 +54,6 @@ const VerifyEmailPage = () => {
                   ← Back to sign in
                 </Link>
               }
-              demoHint={`Demo: use code ${DEMO_CODE}`}
             />
           </div>
         </div>

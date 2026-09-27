@@ -7,14 +7,14 @@ export interface VerifyCodeCardProps {
   subtitle: React.ReactNode;
   destination: string;
   verifyLabel?: string;
-  resendLabel?: string;
   backLink?: React.ReactNode;
   /** Called with the entered code. Return true to show the success screen. */
   onVerify: (code: string) => Promise<boolean>;
+  /** Called by the "Resend code" button. Omit to hide the resend control. */
+  onResend?: () => Promise<void>;
   successTitle: string;
   successDescription: string;
   successAction?: React.ReactNode;
-  demoHint?: string;
 }
 
 const COUNTDOWN_SECONDS = 30;
@@ -26,10 +26,10 @@ export function VerifyCodeCard({
   verifyLabel = "Verify & Sign In",
   backLink,
   onVerify,
+  onResend,
   successTitle,
   successDescription,
   successAction,
-  demoHint,
 }: VerifyCodeCardProps) {
   const [code, setCode] = useState("");
   const [verifying, setVerifying] = useState(false);
@@ -63,14 +63,23 @@ export function VerifyCodeCard({
     }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
+    if (!onResend) return;
     setResending(true);
-    setTimeout(() => {
-      setResending(false);
+    setError("");
+    try {
+      await onResend();
       setSeconds(COUNTDOWN_SECONDS);
       setCode("");
-      setError("");
-    }, 900);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not resend the code. Please try again.",
+      );
+    } finally {
+      setResending(false);
+    }
   };
 
   if (success) {
@@ -131,21 +140,15 @@ export function VerifyCodeCard({
         {verifying ? "Verifying…" : verifyLabel}
       </button>
 
-      {demoHint && (
-        <p className="mt-4 rounded-md bg-amber-50 px-3 py-2 text-center text-xs text-amber-800">
-          {demoHint}
-        </p>
-      )}
-
       <div className="mt-5 flex items-center justify-between text-sm">
         <div className="flex items-center gap-1.5 text-muted-foreground">
           <RotateCcw className="h-4 w-4" />
-          {seconds > 0 ? (
+          {!onResend ? null : seconds > 0 ? (
             <span>Resend code in {seconds}s</span>
           ) : (
             <button
               type="button"
-              onClick={handleResend}
+              onClick={() => void handleResend()}
               disabled={resending}
               className="font-medium text-brand-primary hover:underline"
             >

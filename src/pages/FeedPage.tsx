@@ -20,7 +20,7 @@ import {
   deletePostApi,
 } from "../api/postApi";
 import { getFollowingIdsApi } from "../api/followApi";
-import type { Post, PostCategory } from "../types";
+import { POST_CATEGORIES, type Post, type PostCategory } from "../types";
 import { timeAgo } from "../lib/timeAgo";
 import {
   Badge,
@@ -29,7 +29,6 @@ import {
   Spinner,
 } from "../components/shared";
 import { Select } from "../components/shared/Select";
-import { SEED_CATEGORIES } from "../data/mockPosts";
 
 const CATEGORY_VARIANTS: Record<PostCategory, "brand" | "success" | "warning" | "danger" | "secondary" | "default"> = {
   Achievement: "success",
@@ -88,7 +87,7 @@ const FeedPage = () => {
     loadFeed();
   }, []);
 
-  const myId = user?._id ?? "alu-1";
+  const myId = user?._id ?? "";
   const visiblePosts = useMemo(() => {
     if (filter !== "All") {
       return posts.filter((p) => p.category === filter);
@@ -229,7 +228,7 @@ const FeedPage = () => {
                 <Select
                   value={draftCategory}
                   onChange={(v) => setDraftCategory(v as PostCategory)}
-                  options={SEED_CATEGORIES.map((c) => ({
+                  options={POST_CATEGORIES.map((c) => ({
                     value: c,
                     label: `${CATEGORY_EMOJI[c]}  ${c}`,
                   }))}
@@ -271,7 +270,7 @@ const FeedPage = () => {
             <Users className="h-3.5 w-3.5" />
             {followingOnly ? "Showing people you follow" : "Following"}
           </button>
-          {(["All", ...SEED_CATEGORIES] as const).map((c) => (
+          {(["All", ...POST_CATEGORIES] as const).map((c) => (
             <button
               key={c}
               type="button"

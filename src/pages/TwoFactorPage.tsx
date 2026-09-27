@@ -1,12 +1,16 @@
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { VerifyCodeCard } from "../components/auth/VerifyCodeCard";
-import { DEMO_CODE } from "../lib/demoCode";
+import { verifyTwoFactorApi } from "../api/authApi";
 import LogoHeader from "../components/layout/LogoHeader";
 import Background from "../components/layout/Background";
 
 const TwoFactorPage = () => {
+  const [params] = useSearchParams();
+  const destination = params.get("to") ?? "your authenticator app";
+
   const handleVerify = async (code: string) => {
-    return code === DEMO_CODE;
+    await verifyTwoFactorApi(code);
+    return true;
   };
 
   return (
@@ -18,7 +22,7 @@ const TwoFactorPage = () => {
             <VerifyCodeCard
               title="Two-step verification"
               subtitle="For your security, enter the verification code from your authenticator app or SMS."
-              destination="•••• •••• 4421"
+              destination={destination}
               onVerify={handleVerify}
               verifyLabel="Verify"
               successTitle="Identity verified"
@@ -39,7 +43,6 @@ const TwoFactorPage = () => {
                   ← Back to sign in
                 </Link>
               }
-              demoHint={`Demo: use code ${DEMO_CODE}`}
             />
           </div>
         </div>

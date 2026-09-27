@@ -172,12 +172,5 @@ export function parseStudentId(id: string) {
   };
 }
 
-export function getDepartmentStatsDataset() {
-  return DEPARTMENTS.map((d) => ({
-    _id: d.name,
-    count: 42 + (d.programs?.length ?? 0) * 37 + (departmentSeeds.findIndex((s) => s.id === d._id) % 3) * 19,
-  }));
-}
-
 export const ENTRY_YEARS = [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
 export const GRADUATION_YEARS = graduationYearRange();

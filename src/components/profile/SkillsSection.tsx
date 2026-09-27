@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Plus, ThumbsUp, Wrench, X } from "lucide-react";
 import { updateProfileApi } from "../../api/userApi";
+import { getDirectoryFilterOptionsApi } from "../../api/directoryApi";
 import { endorseSkillApi, getSkillEndorsementsApi, type SkillEndorsements } from "../../api/recommendationApi";
-import { COMMON_SKILLS } from "../../data";
 import type { User } from "../../types";
 import type { PublicProfile } from "../../types/profile";
 import { EmptyState } from "../shared";
@@ -20,6 +20,13 @@ export function SkillsSection({ profile, isOwn, onProfileChanged }: SkillsSectio
   const [error, setError] = useState("");
   const [endorsements, setEndorsements] = useState<SkillEndorsements>({});
   const [endorsing, setEndorsing] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+
+  const loadSuggestions = useCallback(() => {
+    getDirectoryFilterOptionsApi()
+      .then((options) => setSuggestions(options.skills ?? []))
+      .catch(() => setSuggestions([]));
+  }, []);
 
   const loadEndorsements = useCallback(() => {
     if (isOwn || !profile.user._id) return;
@@ -31,8 +38,9 @@ export function SkillsSection({ profile, isOwn, onProfileChanged }: SkillsSectio
   }, [isOwn, profile.user._id]);
 
   useEffect(() => {
+    void loadSuggestions();
     void loadEndorsements();
-  }, [loadEndorsements]);
+  }, [loadSuggestions, loadEndorsements]);
 
   const commit = (next: string[]) => {
     setSkills(next);
@@ -100,7 +108,7 @@ export function SkillsSection({ profile, isOwn, onProfileChanged }: SkillsSectio
             className="h-9 w-56 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:border-brand-primary/50 focus:ring-1 focus:ring-brand-primary/30"
           />
           <div className="flex flex-wrap gap-1.5">
-            {COMMON_SKILLS.filter((s) => !skills.includes(s))
+            {suggestions.filter((s) => !skills.includes(s))
               .slice(0, 8)
               .map((s) => (
                 <button

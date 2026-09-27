@@ -1,15 +1,9 @@
-import type { AuthUser, User } from "../types";
+import type { AuthUser } from "../types";
 import { api, getErrorMessage } from "./client";
-import { MOCK_MODE, mockDelay } from "./mockMode";
-import { MOCK_USERS, createMockUser, MOCK_PENDING_ALUMNI } from "../data";
 
 export async function getBootstrapApi(): Promise<{
   allowFirstAdminRegister: boolean;
 }> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    return { allowFirstAdminRegister: false };
-  }
   const { data } = await api.get<{ allowFirstAdminRegister: boolean }>(
     "/bootstrap",
   );
@@ -17,10 +11,6 @@ export async function getBootstrapApi(): Promise<{
 }
 
 export async function forgotPasswordApi(email: string): Promise<void> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    return;
-  }
   await api.post("/forgot-password", { email });
 }
 
@@ -28,10 +18,6 @@ export async function resetPasswordApi(
   token: string,
   newPassword: string,
 ): Promise<void> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    return;
-  }
   await api.post("/reset-password", { token, newPassword });
 }
 
@@ -55,61 +41,26 @@ export const authHeaders = () => {
   return headers;
 };
 
-function resolveMockLoginUser(email: string): User {
-  const match = MOCK_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase());
-  if (match) return match;
-  if (email.toLowerCase().startsWith("admin")) {
-    return (
-      MOCK_USERS.find((u) => u.role === "admin") ??
-      MOCK_USERS[MOCK_USERS.length - 1]
-    );
-  }
-  if (email.toLowerCase().startsWith("student")) {
-    return MOCK_USERS.find((u) => u.role === "student") ?? MOCK_USERS[0];
-  }
-  return MOCK_USERS[0];
-}
-
 export async function loginApi(
   email: string,
   password: string,
 ): Promise<AuthUser> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    if (!password || password.length < 4) {
-      throw new Error("Invalid email or password. Try admin@exploits.ac.zw / admin123 or student1@exploits.ac.zw / student123.");
-    }
-    const user = resolveMockLoginUser(email);
-    return { ...user, token: `mock-token-${user._id}` };
-  }
   try {
     const { data } = await api.post<{
       user: AuthUser;
       token: string;
     }>("/login", { email, password });
+    if (!data.user || !data.token) throw new Error("Login response was empty");
     return { ...data.user, token: data.token };
   } catch (e) {
     throw new Error(getErrorMessage(e, "Login failed"));
   }
 }
 
+/** `code` is the 6-digit code emailed during sign-up; the backend validates it. */
 export async function registerApi(
   data: Record<string, string>,
 ): Promise<AuthUser> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    const existing = MOCK_USERS.some(
-      (u) => u.email.toLowerCase() === (data.email ?? "").toLowerCase(),
-    );
-    const alreadyPending = MOCK_PENDING_ALUMNI.some(
-      (u) => u.email.toLowerCase() === (data.email ?? "").toLowerCase(),
-    );
-    if (existing || alreadyPending) {
-      throw new Error("An account with this email already exists.");
-    }
-    const user = createMockUser(data);
-    return { ...user, token: `mock-token-${user._id}` };
-  }
   try {
     const { data: body } = await api.post<{
       user: AuthUser;
@@ -121,5 +72,45 @@ export async function registerApi(
     return { ...body.user, token: body.token };
   } catch (e) {
     throw new Error(getErrorMessage(e, "Registration failed"));
+  }
+}
+
+/** Asks the backend to (re)send a 6-digit sign-up verification code. */
+export async function sendVerificationCodeApi(email: string): Promise<void> {
+  try {
+    await api.post("/verify-email/send", { email });
+  } catch (e) {
+    throw new Error(getErrorMessage(e, "Could not send the verification code"));
+  }
+}
+
+/** Asks the backend to re-issue the current code (rate limited server-side). */
+export async function resendVerificationCodeApi(email: string): Promise<void> {
+  try {
+    await api.post("/verify-email/resend", { email });
+  } catch (e) {
+    throw new Error(getErrorMessage(e, "Could not resend the code"));
+  }
+}
+
+/** Confirms an emailed code. Throws when the code is wrong or expired. */
+export async function verifyEmailApi(email: string, code: string): Promise<void> {
+  try {
+    await api.post("/verify-email", { email, code });
+  } catch (e) {
+    throw new Error(
+      getErrorMessage(e, "That code doesn't match. Please try again."),
+    );
+  }
+}
+
+/** Completes a two-step challenge. Throws when the code is wrong or expired. */
+export async function verifyTwoFactorApi(code: string): Promise<void> {
+  try {
+    await api.post("/two-factor/verify", { code });
+  } catch (e) {
+    throw new Error(
+      getErrorMessage(e, "That code doesn't match. Please try again."),
+    );
   }
 }

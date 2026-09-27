@@ -24,11 +24,7 @@ const AdminLoginPage = () => {
       }
       navigate("/admin", { replace: true });
     } catch (err: unknown) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Login failed. Try admin@exploits.ac.zw / admin123",
-      );
+      setError(err instanceof Error ? err.message : "Login failed");
     } finally {
       setLoading(false);
     }
@@ -73,7 +69,7 @@ const AdminLoginPage = () => {
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     required
-                    placeholder="admin@exploits.ac.zw"
+                    placeholder="name@exploits.ac.mw"
                     className="h-10 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent"
                   />
                 </div>
@@ -120,11 +116,9 @@ const AdminLoginPage = () => {
               </button>
             </form>
 
-            <div className="mt-5 rounded-md bg-brand-primary/5 px-3 py-2 text-xs text-gray-600">
-              Demo credentials —{" "}
-              <span className="font-mono text-brand-primary">admin@exploits.ac.zw</span>{" "}
-              / <span className="font-mono text-brand-primary">admin123</span>
-            </div>
+            <p className="mt-5 text-center text-xs text-gray-500">
+              Trouble signing in? Contact the Exploits University IT helpdesk.
+            </p>
           </div>
 
           <p className="mt-6 text-center text-sm text-white/60">

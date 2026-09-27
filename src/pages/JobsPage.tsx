@@ -9,8 +9,8 @@ import {
   referStudentApi,
   hasReferredApi,
 } from "../api/jobApi";
-import type { Job } from "../types";
-import { MOCK_STUDENTS } from "../data";
+import type { DirectoryUser, Job } from "../types";
+import { getStudentsDirectoryApi } from "../api/directoryApi";
 
 export interface JobFormData {
   title: string;
@@ -382,6 +382,21 @@ export function ReferJobModal({
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const [students, setStudents] = useState<DirectoryUser[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    getStudentsDirectoryApi()
+      .then((res) => {
+        if (active) setStudents(res.students ?? []);
+      })
+      .catch(() => {
+        if (active) setFormError("Could not load the student list.");
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const submit = async () => {
     if (!studentId) {
@@ -431,7 +446,7 @@ export function ReferJobModal({
           className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a6e]"
         >
           <option value="">Select a student…</option>
-          {MOCK_STUDENTS.map((s) => (
+          {students.map((s) => (
             <option key={s._id} value={s._id}>
               {s.name} — {s.program || s.department || "Student"}
             </option>

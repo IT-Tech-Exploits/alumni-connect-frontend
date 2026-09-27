@@ -2,8 +2,7 @@ import { useState } from "react";
 import { ImagePlus, Loader2, Send } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { createPostApi } from "../../api/postApi";
-import type { PostCategory } from "../../types";
-import { SEED_CATEGORIES } from "../../data";
+import { POST_CATEGORIES, type PostCategory } from "../../types";
 import { InitialsAvatar } from "../shared";
 import { TagUserInput } from "./TagUserInput";
 
@@ -57,7 +56,7 @@ export function PostComposer({ onPosted, onError }: PostComposerProps) {
       {text.trim() && (
         <div className="mt-3 space-y-3">
           <div className="flex flex-wrap items-center gap-1.5">
-            {SEED_CATEGORIES.map((c) => (
+            {POST_CATEGORIES.map((c) => (
               <button
                 key={c}
                 type="button"

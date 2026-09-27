@@ -42,7 +42,7 @@ interface PostCardProps {
 
 export function PostCard({ post, editable = false, onPosted, onError }: PostCardProps) {
   const { user } = useAuth();
-  const myId = user?._id ?? "alu-1";
+  const myId = user?._id ?? "";
 
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [editing, setEditing] = useState(false);

@@ -20,7 +20,7 @@ import {
   ArrowRight,
   BarChart3,
   Briefcase,
-  FileSpreadsheet
+  FileSpreadsheet,
   CalendarDays,
   CheckCircle2,
   ClipboardList,
@@ -35,28 +35,58 @@ import {
 import PageContainer from "../../components/layout/PageContainer";
 import { getDashboardStatsApi, getPendingAlumniApi } from "../../api/userApi";
 import { getJobsApi } from "../../api/jobApi";
-import { getAnalyticsDataset } from "../../data";
+import { getAnalyticsDatasetApi } from "../../api/analyticsApi";
+import type { AnalyticsDataset } from "../../types/analytics";
 import { StatCard, CardSkeleton, SectionHeader } from "../../components/shared";
 
 const COLORS = ["#27155f", "#3a2080", "#e40d0a", "#10b981", "#f59e0b", "#6366f1"];
+
+const EMPTY_DATASET: AnalyticsDataset = {
+  studentsVsAlumni: [],
+  newRegistrations: [],
+  activeUsers: [],
+  alumniByDepartment: [],
+  usersByProgramme: [],
+  graduationDistribution: [],
+  campusDistribution: [],
+  engagement: {
+    posts: 0,
+    likes: 0,
+    comments: 0,
+    connections: 0,
+    eventParticipants: 0,
+    mentorship: 0,
+  },
+  engagementTrend: [],
+  career: {
+    jobsPosted: 0,
+    applications: 0,
+    savedJobs: 0,
+    pendingJobs: 0,
+    hires: 0,
+  },
+  applicationsByJob: [],
+};
 
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<Awaited<ReturnType<typeof getDashboardStatsApi>> | null>(null);
   const [pendingAlumniCount, setPendingAlumniCount] = useState(0);
   const [pendingJobsCount, setPendingJobsCount] = useState(0);
-  const [dataset] = useState(() => getAnalyticsDataset());
+  const [dataset, setDataset] = useState<AnalyticsDataset>(EMPTY_DATASET);
 
   useEffect(() => {
     Promise.allSettled([
       getDashboardStatsApi(),
       getPendingAlumniApi(),
       getJobsApi(),
-    ]).then(([s, pa, jr]) => {
+      getAnalyticsDatasetApi(),
+    ]).then(([s, pa, jr, ds]) => {
       if (s.status === "fulfilled") setStats(s.value);
       if (pa.status === "fulfilled") setPendingAlumniCount(pa.value.length);
       if (jr.status === "fulfilled")
         setPendingJobsCount(jr.value.filter((j) => j.status === "pending").length);
+      if (ds.status === "fulfilled") setDataset(ds.value);
     }).finally(() => setLoading(false));
   }, []);
 
@@ -67,8 +97,7 @@ const AdminDashboard = () => {
     year: "numeric",
   });
 
-  const totalUsers = (stats?.users.total ?? 1841)
-    .toLocaleString();
+  const totalUsers = (stats?.users.total ?? 0).toLocaleString();
   const engagement = dataset.engagement;
 
   return (
@@ -193,19 +222,19 @@ const AdminDashboard = () => {
             <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
               <div>
                 <p className="text-2xl font-bold text-foreground">
-                  {(stats?.mentorship.total ?? 216).toLocaleString()}
+                  {(stats?.mentorship.total ?? 0).toLocaleString()}
                 </p>
                 <p className="text-xs text-muted-foreground">Total pairings</p>
               </div>
               <div>
                 <p className="text-2xl font-bold text-brand-primary">
-                  {stats?.mentorship.active ?? 33}
+                  {stats?.mentorship.active ?? 0}
                 </p>
                 <p className="text-xs text-muted-foreground">Active now</p>
               </div>
               <div>
                 <p className="text-2xl font-bold text-brand-red">
-                  {stats?.mentorship.pending ?? 31}
+                  {stats?.mentorship.pending ?? 0}
                 </p>
                 <p className="text-xs text-muted-foreground">Pending matches</p>
               </div>
@@ -219,19 +248,19 @@ const AdminDashboard = () => {
             <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
               <div>
                 <p className="text-2xl font-bold text-foreground">
-                  {stats?.jobs.total ?? 64}
+                  {stats?.jobs.total ?? 0}
                 </p>
                 <p className="text-xs text-muted-foreground">Total postings</p>
               </div>
               <div>
                 <p className="text-2xl font-bold text-emerald-600">
-                  {stats?.jobs.active ?? 42}
+                  {stats?.jobs.active ?? 0}
                 </p>
                 <p className="text-xs text-muted-foreground">Active</p>
               </div>
               <div>
                 <p className="text-2xl font-bold text-amber-500">
-                  {stats?.jobs.pending ?? 5}
+                  {stats?.jobs.pending ?? 0}
                 </p>
                 <p className="text-xs text-muted-foreground">Pending review</p>
               </div>
@@ -245,13 +274,13 @@ const AdminDashboard = () => {
             <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
               <div>
                 <p className="text-2xl font-bold text-foreground">
-                  {stats?.events.total ?? 28}
+                  {stats?.events.total ?? 0}
                 </p>
                 <p className="text-xs text-muted-foreground">Total events</p>
               </div>
               <div>
                 <p className="text-2xl font-bold text-brand-red">
-                  {stats?.events.upcoming ?? 9}
+                  {stats?.events.upcoming ?? 0}
                 </p>
                 <p className="text-xs text-muted-foreground">Upcoming</p>
               </div>

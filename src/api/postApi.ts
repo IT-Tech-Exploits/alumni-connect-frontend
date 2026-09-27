@@ -1,103 +1,68 @@
 import type { Post, CreatePostInput } from "../types";
-import { MOCK_MODE, mockDelay, mockDelayFast } from "./mockMode";
-import { MOCK_POSTS } from "../data";
+import { api, getErrorMessage } from "./client";
 
-const hoursAgo = (h: number) => new Date(Date.now() - h * 3600 * 1000).toISOString();
-
-function currentIdentity() {
-  try {
-    const raw = localStorage.getItem("alumniConnectUser");
-    if (raw) return JSON.parse(raw);
-  } catch {
-    /* ignore */
-  }
-  return { _id: "alu-1", name: "Tinashe Dlamini", role: "alumni" };
-}
-
-/** In mock mode localStorage identity is "alu-1" for the demo profile. */
-function postAuthorYours() {
-  const identity = currentIdentity();
-  return {
-    _id: identity._id ?? "alu-1",
-    name: identity.name ?? "Tinashe Dlamini",
-    role: identity.role ?? "alumni",
-    position: identity.position,
-    department: identity.department,
-    graduationYear: identity.graduationYear,
-  };
-}
+/**
+ * Community feed. The backend owns the author, timestamps, like counts and
+ * comment list — the client only ever sends text/category and re-renders the
+ * post object the server returns.
+ */
 
 export async function getFeedApi(): Promise<Post[]> {
-  if (MOCK_MODE) {
-    await mockDelay();
-    return [...MOCK_POSTS];
+  try {
+    const { data } = await api.get<Post[] | { posts: Post[] }>("/posts");
+    return Array.isArray(data) ? data : (data.posts ?? []);
+  } catch (e) {
+    throw new Error(getErrorMessage(e, "Failed to load the feed"));
   }
-  // Real backend not implemented yet — always serve mock even outside mock mode.
-  await mockDelayFast();
-  return [...MOCK_POSTS];
 }
 
-export async function createPostApi(
-  input: CreatePostInput,
-): Promise<Post> {
-  await mockDelay();
-  const post: Post = {
-    _id: `post-${Date.now()}`,
-    author: postAuthorYours(),
-    category: input.category,
-    text: input.text,
-    imageUrl: input.imageUrl,
-    likes: [],
-    comments: [],
-    createdAt: new Date().toISOString(),
-  };
-  MOCK_POSTS.unshift(post);
-  return post;
+export async function createPostApi(input: CreatePostInput): Promise<Post> {
+  try {
+    const { data } = await api.post<Post>("/posts", {
+      category: input.category,
+      text: input.text,
+      imageUrl: input.imageUrl,
+    });
+    return data;
+  } catch (e) {
+    throw new Error(getErrorMessage(e, "Could not publish post"));
+  }
 }
 
 export async function toggleLikePostApi(id: string): Promise<Post> {
-  await mockDelayFast();
-  const post = MOCK_POSTS.find((p) => p._id === id);
-  if (!post) throw new Error("Post not found");
-  const me = currentIdentity()._id ?? "alu-1";
-  const hasLiked = post.likes.includes(me);
-  post.likes = hasLiked
-    ? post.likes.filter((l) => l !== me)
-    : [...post.likes, me];
-  return post;
+  try {
+    const { data } = await api.post<Post>(`/posts/${id}/like`);
+    return data;
+  } catch (e) {
+    throw new Error(getErrorMessage(e, "Could not update like"));
+  }
 }
 
 export async function addCommentApi(
   id: string,
   text: string,
 ): Promise<Post> {
-  await mockDelayFast();
-  const post = MOCK_POSTS.find((p) => p._id === id);
-  if (!post) throw new Error("Post not found");
-  const identity = currentIdentity();
-  post.comments.push({
-    _id: `pc-${Date.now()}`,
-    userId: identity._id ?? "alu-1",
-    authorName: identity.name ?? "Tinashe Dlamini",
-    authorRole: identity.role ?? "alumni",
-    text,
-    createdAt: hoursAgo(0),
-  });
-  return post;
+  try {
+    const { data } = await api.post<Post>(`/posts/${id}/comments`, { text });
+    return data;
+  } catch (e) {
+    throw new Error(getErrorMessage(e, "Could not add comment"));
+  }
 }
 
 export async function editPostApi(id: string, text: string): Promise<Post> {
-  await mockDelayFast();
-  const post = MOCK_POSTS.find((p) => p._id === id);
-  if (!post) throw new Error("Post not found");
-  post.text = text;
-  return post;
+  try {
+    const { data } = await api.put<Post>(`/posts/${id}`, { text });
+    return data;
+  } catch (e) {
+    throw new Error(getErrorMessage(e, "Could not edit post"));
+  }
 }
 
 export async function deletePostApi(id: string): Promise<void> {
-  await mockDelayFast();
-  const idx = MOCK_POSTS.findIndex((p) => p._id === id);
-  if (idx >= 0) MOCK_POSTS.splice(idx, 1);
+  try {
+    await api.delete(`/posts/${id}`);
+  } catch (e) {
+    throw new Error(getErrorMessage(e, "Could not delete post"));
+  }
 }
-
-export { MOCK_MODE as isFeedMocked };

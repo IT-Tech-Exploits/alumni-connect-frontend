@@ -24,7 +24,7 @@ export interface User {
   department?: string;
   program?: string;
   interests?: string[];
-  // PROFESSIONAL PROFILE (LinkedIn-inspired, frontend + mock)
+  // PROFESSIONAL PROFILE (LinkedIn-inspired)
   headline?: string;
   location?: string;
   coverPhoto?: string;

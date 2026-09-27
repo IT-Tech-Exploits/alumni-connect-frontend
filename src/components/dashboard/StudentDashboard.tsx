@@ -75,7 +75,7 @@ const StudentDashboard = () => {
   const stats = useMemo(() => {
     const approved = jobs.filter((j) => j.status === "approved");
     const applied = approved.filter((a) =>
-      (a.applicants ?? []).includes(user?._id ?? "std-1"),
+      (a.applicants ?? []).includes(user?._id ?? ""),
     );
     return {
       total: approved.length,
@@ -242,12 +242,12 @@ const StudentDashboard = () => {
                       </div>
                       <span
                         className={`inline-flex shrink-0 items-center gap-1 self-start rounded-full px-2.5 py-1 text-[11px] font-semibold sm:self-center ${
-                          (job.applicants ?? []).includes(user?._id ?? "std-1")
+                          (job.applicants ?? []).includes(user?._id ?? "")
                             ? "bg-emerald-100 text-emerald-700"
                             : "bg-brand-primary/10 text-brand-primary"
                         }`}
                       >
-                        {(job.applicants ?? []).includes(user?._id ?? "std-1") ? (
+                        {(job.applicants ?? []).includes(user?._id ?? "") ? (
                           <>
                             <CheckCircle2 className="h-3.5 w-3.5" /> Applied
                           </>

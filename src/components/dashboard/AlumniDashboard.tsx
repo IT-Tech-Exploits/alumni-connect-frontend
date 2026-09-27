@@ -19,6 +19,8 @@ import { getEventsApi } from "../../api/eventApi";
 import { getProfileApi } from "../../api/userApi";
 import { getFeedApi } from "../../api/postApi";
 import { getAlumniConnectionsApi } from "../../api/connectionApi";
+import { getProfileSuggestionsApi } from "../../api/profileApi";
+import type { ProfileSuggestion } from "../../types/profile";
 import type { Job, Event, Post, User } from "../../types";
 import {
   StatCard,
@@ -30,7 +32,6 @@ import {
   CardSkeleton,
   ListCardSkeleton,
 } from "../shared";
-import { MOCK_ALUMNI } from "../../data";
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -68,6 +69,7 @@ const AlumniDashboardPage = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [pendingRequests, setPendingRequests] = useState(0);
+  const [peopleYouMayKnow, setPeopleYouMayKnow] = useState<ProfileSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -77,13 +79,15 @@ const AlumniDashboardPage = () => {
       getEventsApi(),
       getFeedApi(),
       getAlumniConnectionsApi(),
+      getProfileSuggestionsApi(),
     ])
-      .then(([p, j, e, postsData, conn]) => {
+      .then(([p, j, e, postsData, conn, suggestions]) => {
         setProfile(p);
         setMyJobs(j.filter((job) => job.postedBy?._id === p?._id).slice(0, 3));
         setEvents(e.slice(0, 3));
         setPosts(postsData.slice(0, 3));
         setPendingRequests(conn.pending.length);
+        setPeopleYouMayKnow((suggestions.peopleYouMayKnow ?? []).slice(0, 4));
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -91,7 +95,6 @@ const AlumniDashboardPage = () => {
 
   const completion = useMemo(() => profileCompletion(profile ?? user), [profile, user]);
   const firstName = (profile?.name ?? user?.name ?? "Alumni").split(" ")[0];
-  const peopleYouMayKnow = MOCK_ALUMNI.filter((a) => a._id !== profile?._id).slice(0, 4);
 
   return (
     <PageContainer title="Alumni Dashboard" showLogo>
@@ -336,7 +339,8 @@ const AlumniDashboardPage = () => {
                         {person.name}
                       </p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {person.position} · {person.company}
+                        {[person.position, person.company].filter(Boolean).join(" · ") ||
+                          "Exploits University"}
                       </p>
                     </div>
                     <Link
